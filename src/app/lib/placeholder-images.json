@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-trading",
+      "description": "Professional trading terminal interface",
+      "imageUrl": "https://picsum.photos/seed/quant1/1200/800",
+      "imageHint": "trading dashboard"
+    },
+    {
+      "id": "market-chart",
+      "description": "Financial market candlestick chart",
+      "imageUrl": "https://picsum.photos/seed/quant2/800/600",
+      "imageHint": "stock chart"
+    }
+  ]
+}

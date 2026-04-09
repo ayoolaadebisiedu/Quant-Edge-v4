@@ -1,0 +1,23 @@
+# **App Name**: QuantEdge
+
+## Core Features:
+
+- Dashboard Overview: Display key portfolio metrics, a customizable performance chart, and a live watchlist with real-time price updates and sparklines.
+- Live Watchlist Management: Users can add, remove, and manage financial symbols in a personalized watchlist, featuring instant price updates.
+- Interactive Charting with Technicals: View OHLCV price data with candlestick charts and overlay popular technical indicators (e.g., SMA, EMA, RSI, MACD) across various timeframes.
+- Dynamic Market Screener: Filter and discover instruments based on custom technical parameters and pre-computed metrics (e.g., RSI, Volume ratio, price change, MACD), supporting saved presets and hybrid client/server-side filtering.
+- Algorithmic Strategy Backtesting: Simulate trading strategies against historical market data, configuring exchanges, trading and data routes (symbols, timeframes, strategies), and custom durations with options for detailed debug logging to evaluate performance without look-ahead bias.
+- Live/Paper Trading Execution: Deploy and monitor algorithmic trading strategies in real-time or paper trading environments, supporting multiple accounts, market, limit, and stop orders, with robust monitoring tools, real-time logs, and advanced notifications.
+- Strategy Editor IDE: An integrated development environment for writing, editing, and debugging algorithmic trading strategies using a simplified, Python-like syntax, with comprehensive indicator libraries and built-in helper functions for robust risk management.
+- Global Market Heatmap & Geo-Visualization: Visualize global market activity, trading volume distribution, and news sentiment on an interactive world map, providing macro-level insights into regional market performance and trends.
+- Advanced Real-time Alerts: Create and manage custom real-time alerts based on specific market conditions, indicator thresholds, or strategy events, with configurable notification channels to platforms like Telegram, Slack, and Discord.
+- AI Strategy Assistant: Leverage a generative AI tool to assist users in writing, debugging, and optimizing algorithmic trading strategies with contextual code suggestions, and fine-tune strategy parameters using advanced AI optimization without needing a technical background.
+- AI Portfolio Optimization: Receive AI-generated insights and recommendations for portfolio risk management and asset allocation, leveraging a generative AI tool that uses reasoning based on real-time market data and historical performance.
+
+## Style Guidelines:
+
+- The application employs a dark theme. The primary action color is a professional deep blue ('#235299'), signaling trust and stability. The background is a very dark, slightly bluish grey ('#1A1E22'), designed for reduced eye strain during prolonged analysis sessions. An analogous accent color, a vibrant cyan ('#3CCAF0'), is used to highlight key interactive elements and provide contrast. Positive market movements are indicated by a crisp green ('#38D94F'), while negative movements are marked by a clear red ('#F03C3C').
+- Headlines and prominent UI text use 'Space Grotesk' (sans-serif) for a modern, tech-forward feel. Body text, descriptions, and detailed data points utilize 'Inter' (sans-serif) for its clarity and objective readability. Code snippets and strategy logic within the editor use 'Source Code Pro' (monospace) to ensure consistent and legible display of programmatic content.
+- Employ a suite of clean, minimalist line icons throughout the interface. Icons should be clear and descriptive, avoiding excessive detail, and consistently styled to maintain a modern and professional aesthetic suitable for data-intensive applications.
+- A responsive, modular layout based on CSS Grid. Features a collapsible left sidebar for navigation and a dedicated top bar for global market filtering and status. Content areas prioritize efficient display of complex financial data through metric cards, virtualized tables, and interactive charts, designed to maximize information density without appearing cluttered.
+- Subtle and functional animations enhance user experience without being distracting. Implement smooth number transitions for real-time data updates, soft fade-ins for new data entries, and graceful transitions for UI elements such as sidebar expansion/collapse and chart timeframe changes, providing visual feedback to user interactions and data flow.

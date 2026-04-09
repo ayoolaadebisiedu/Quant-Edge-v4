@@ -18,6 +18,12 @@
       "description": "Market heatmap visualization",
       "imageUrl": "https://picsum.photos/seed/quant3/1000/600",
       "imageHint": "data visualization"
+    },
+    {
+      "id": "auth-bg",
+      "description": "Abstract glowing geometric network design",
+      "imageUrl": "https://picsum.photos/seed/quant4/1200/1200",
+      "imageHint": "abstract network"
     }
   ]
 }

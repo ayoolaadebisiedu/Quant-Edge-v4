@@ -24,7 +24,8 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const backgroundImage = PlaceHolderImages.find(img => img.id === 'market-chart');
+  // Use the new abstract background image
+  const backgroundImage = PlaceHolderImages.find(img => img.id === 'auth-bg');
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,18 +64,18 @@ export default function SignupPage() {
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
       {/* Background Image */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-slate-950">
         {backgroundImage && (
           <Image
             src={backgroundImage.imageUrl}
-            alt="Market Chart Background"
+            alt="Authentication Background"
             fill
-            className="object-cover opacity-20 grayscale"
+            className="object-cover opacity-40 mix-blend-screen"
             priority
             data-ai-hint={backgroundImage.imageHint}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40" />
       </div>
 
       {/* Signup Card */}

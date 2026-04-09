@@ -23,7 +23,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const backgroundImage = PlaceHolderImages.find(img => img.id === 'hero-trading');
+  // Use the new abstract background image
+  const backgroundImage = PlaceHolderImages.find(img => img.id === 'auth-bg');
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,18 +57,18 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
       {/* Background Image */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-slate-950">
         {backgroundImage && (
           <Image
             src={backgroundImage.imageUrl}
-            alt="Trading Background"
+            alt="Authentication Background"
             fill
-            className="object-cover opacity-30 grayscale-[0.5]"
+            className="object-cover opacity-40 mix-blend-screen"
             priority
             data-ai-hint={backgroundImage.imageHint}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/90 to-primary/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-950/80 to-primary/20" />
       </div>
 
       {/* Login Card */}

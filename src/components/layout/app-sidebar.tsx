@@ -58,8 +58,12 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     if (!auth) return
-    await signOut(auth)
-    router.push('/')
+    try {
+      await signOut(auth)
+      router.push('/')
+    } catch (error) {
+      console.error("Logout error", error)
+    }
   }
 
   return (
@@ -135,9 +139,11 @@ export function AppSidebar() {
         )}
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Settings">
-              <Settings />
-              <span>Settings</span>
+            <SidebarMenuButton asChild tooltip="Settings" isActive={pathname === '/settings'}>
+              <Link href="/settings">
+                <Settings />
+                <span>Settings</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

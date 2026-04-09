@@ -2,7 +2,7 @@
 'use client';
 
 import './globals.css';
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
@@ -25,17 +25,25 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If it's a dashboard page and no user, we might want to redirect, 
-  // but we'll let individual pages handle strict auth logic if needed.
-  // For the layout, we just decide whether to show the sidebar.
-  const showSidebar = !isAuthPage && user;
+  // Show sidebar on all pages except auth/landing pages to ensure preview visibility
+  const showSidebar = !isAuthPage;
 
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex h-screen w-full overflow-hidden bg-background">
         {showSidebar && <AppSidebar />}
         <main className="flex-1 relative flex flex-col min-w-0 overflow-hidden">
-          {children}
+          {showSidebar && (
+            <header className="h-14 border-b border-border flex items-center px-4 shrink-0 bg-card/30 backdrop-blur-sm z-10">
+              <SidebarTrigger className="mr-4" />
+              <div className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
+                QuantEdge Terminal // {pathname.split('/').pop() || 'Dashboard'}
+              </div>
+            </header>
+          )}
+          <div className="flex-1 overflow-auto">
+            {children}
+          </div>
         </main>
       </div>
     </SidebarProvider>

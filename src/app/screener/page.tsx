@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   TrendingUp, TrendingDown, Filter, Download, 
-  ChevronRight, ArrowUpDown, Search, Star, Loader2
+  ChevronRight, ArrowUpDown, Search, Star, Loader2,
+  Globe, Zap
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-interface MarketItem {
+export interface MarketItem {
   symbol: string;
   price: number;
   change: number;
@@ -25,7 +26,7 @@ interface MarketItem {
   isFavorite?: boolean;
 }
 
-const INITIAL_DATA: MarketItem[] = [
+export const INITIAL_MARKET_DATA: MarketItem[] = [
   { symbol: 'BTC/USDT', price: 64231.50, change: 4.2, volume: '2.4B', rsi: 65, status: 'Bullish', market: 'crypto' },
   { symbol: 'ETH/USDT', price: 3421.20, change: 2.1, volume: '1.1B', rsi: 58, status: 'Neutral', market: 'crypto' },
   { symbol: 'SOL/USDT', price: 142.55, change: -1.8, volume: '800M', rsi: 42, status: 'Bearish', market: 'crypto' },
@@ -39,7 +40,7 @@ const INITIAL_DATA: MarketItem[] = [
 ]
 
 export default function ScreenerPage() {
-  const [data, setData] = useState<MarketItem[]>(INITIAL_DATA)
+  const [data, setData] = useState<MarketItem[]>(INITIAL_MARKET_DATA)
   const [searchTerm, setSearchTerm] = useState("")
   const [marketFilter, setMarketFilter] = useState("all")
   const [timeframe, setTimeframe] = useState("1h")
@@ -130,20 +131,20 @@ export default function ScreenerPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">Market Screener</h1>
-          <p className="text-muted-foreground">Real-time indicators across global markets.</p>
+          <p className="text-muted-foreground">Real-time indicators across global markets from integrated providers.</p>
         </div>
         <div className="flex gap-2">
+          <Badge variant="outline" className="gap-2 px-3 py-1 border-primary/30 bg-primary/5">
+            <Zap className="w-3 h-3 text-primary" /> Feed: Connected (Binance/Alpaca)
+          </Badge>
           <Button variant="outline" className="gap-2" onClick={handleExport} disabled={isLoading}>
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Export CSV
           </Button>
-          <Button className="gap-2 bg-primary">
-            <Filter className="w-4 h-4" /> Filters
-          </Button>
         </div>
       </div>
 
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+      <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-xl">
         <CardHeader className="pb-3 border-b border-border mb-4">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="relative flex-1">

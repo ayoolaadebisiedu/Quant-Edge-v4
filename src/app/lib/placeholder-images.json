@@ -3,9 +3,9 @@
   "placeholderImages": [
     {
       "id": "hero-trading",
-      "description": "Professional trading terminal interface",
-      "imageUrl": "https://picsum.photos/seed/quant1/1200/800",
-      "imageHint": "trading dashboard"
+      "description": "Abstract quantum network visualization representing high-frequency data and algorithmic trading",
+      "imageUrl": "https://picsum.photos/seed/quant-hero/1200/800",
+      "imageHint": "quantum network"
     },
     {
       "id": "market-chart",

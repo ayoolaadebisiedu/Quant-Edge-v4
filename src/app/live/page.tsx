@@ -16,10 +16,11 @@ import {
   Play, Activity, Zap, ShieldCheck, 
   ArrowUpRight, ArrowDownRight,
   Terminal, Loader2, Calculator,
-  Lock, TrendingUp, Clock, Server, Cpu, Globe
+  Lock, TrendingUp, Clock, Server, Globe,
+  BarChart4, ArrowRightLeft
 } from "lucide-react"
 import { 
-  AreaChart, Area, ResponsiveContainer, YAxis, XAxis
+  AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip
 } from 'recharts'
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
@@ -81,7 +82,8 @@ export default function LiveTradingPage() {
     broker: 'alpaca_paper',
     symbol: 'BTC/USDT',
     amount: '5000',
-    worker: 'ec2-01'
+    worker: 'ec2-01',
+    timeframe: '1h'
   })
 
   const logEndRef = useRef<HTMLDivElement>(null)
@@ -105,7 +107,7 @@ export default function LiveTradingPage() {
   }, [db, user])
   const { data: persistentPositions, isLoading: isLoadingPositions } = useCollection<any>(positionsQuery)
 
-  const [livePrices, setLivePrices] = useState<Record<string, { price: number, pnl: number, chart: any[] }>>({})
+  const [livePrices, setLivePrices] = useState<Record<string, { price: number, pnl: number, profitUsd: number, tradeCount: number, chart: any[] }>>({})
 
   useEffect(() => {
     if (logEndRef.current) {
@@ -124,17 +126,22 @@ export default function LiveTradingPage() {
           const currentData = next[pos.id] || { 
             price: pos.entryPrice, 
             pnl: 0, 
+            profitUsd: 0,
+            tradeCount: pos.tradeCount || 1,
             chart: Array.from({length: 10}, (_, i) => ({ val: pos.entryPrice })) 
           }
           
-          const change = (Math.random() - 0.5) * (basePrice * 0.001)
+          const change = (Math.random() - 0.49) * (basePrice * 0.001)
           const newPrice = currentData.price + change
           const pnl = ((newPrice - pos.entryPrice) / pos.entryPrice) * 100 * (pos.side === 'LONG' ? 1 : -1)
+          const profitUsd = (newPrice - pos.entryPrice) * (pos.quantity || 1) * (pos.side === 'LONG' ? 1 : -1)
           
           next[pos.id] = {
             price: newPrice,
             pnl: pnl,
-            chart: [...currentData.chart.slice(-19), { val: newPrice }]
+            profitUsd: profitUsd,
+            tradeCount: currentData.tradeCount,
+            chart: [...currentData.chart.slice(-24), { val: newPrice }]
           }
         })
         return next
@@ -187,7 +194,9 @@ export default function LiveTradingPage() {
       userId: user.uid,
       tradingAccountId: 'default',
       infrastructure: 'aws-ec2-us-east-1',
-      workerId: config.worker
+      workerId: config.worker,
+      timeframe: config.timeframe,
+      tradeCount: 1
     }
 
     try {
@@ -267,6 +276,20 @@ export default function LiveTradingPage() {
                     <Input value={config.symbol} onChange={(e) => setConfig({...config, symbol: e.target.value})} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Timeframe</Label>
+                    <Select value={config.timeframe} onValueChange={(v) => setConfig({...config, timeframe: v})}>
+                        <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1m">1 minute</SelectItem>
+                          <SelectItem value="5m">5 minutes</SelectItem>
+                          <SelectItem value="15m">15 minutes</SelectItem>
+                          <SelectItem value="1h">1 hour</SelectItem>
+                          <SelectItem value="4h">4 hours</SelectItem>
+                          <SelectItem value="1D">1 Day</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right">Investment</Label>
                     <div className="col-span-3 relative">
                        <span className="absolute left-3 top-2.5 text-muted-foreground text-xs">$</span>
@@ -298,7 +321,6 @@ export default function LiveTradingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-6">
-          {/* Infrastructure Health */}
           <Card className="bg-card/40 border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
@@ -400,10 +422,10 @@ export default function LiveTradingPage() {
               ) : (
                 <div className="divide-y divide-white/5">
                   {persistentPositions.map(pos => {
-                    const sim = livePrices[pos.id] || { price: pos.entryPrice, pnl: 0, chart: [] }
+                    const sim = livePrices[pos.id] || { price: pos.entryPrice, pnl: 0, profitUsd: 0, tradeCount: pos.tradeCount || 1, chart: [] }
                     return (
                       <div key={pos.id} className="p-6 flex flex-col gap-6 hover:bg-white/[0.02] transition-all">
-                        <div className="w-full space-y-4">
+                        <div className="w-full space-y-6">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg ${pos.side === 'LONG' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -413,6 +435,7 @@ export default function LiveTradingPage() {
                                 <div className="text-lg font-bold flex items-center gap-2">
                                   {pos.instrumentId}
                                   <Badge variant="outline" className="text-[9px] uppercase">{pos.strategyName}</Badge>
+                                  <Badge variant="secondary" className="text-[9px] h-5 bg-primary/10 text-primary border-primary/20">{pos.timeframe || '1h'}</Badge>
                                 </div>
                                 <div className="flex items-center gap-3">
                                   <RuntimeDisplay entryTime={pos.entryTime} />
@@ -421,13 +444,26 @@ export default function LiveTradingPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className={`text-2xl font-mono font-bold ${sim.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {sim.pnl >= 0 ? '+' : ''}{sim.pnl.toFixed(2)}%
-                              </div>
-                              <div className="text-[10px] text-muted-foreground uppercase">
-                                Cur: ${sim.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                              </div>
+                            
+                            <div className="flex gap-8 items-center">
+                               <div className="text-right">
+                                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Net Profit</div>
+                                  <div className={`text-xl font-mono font-bold ${sim.profitUsd >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {sim.profitUsd >= 0 ? '+' : ''}${sim.profitUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                  </div>
+                               </div>
+                               <div className="text-right">
+                                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">PnL (%)</div>
+                                  <div className={`text-xl font-mono font-bold ${sim.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {sim.pnl >= 0 ? '+' : ''}{sim.pnl.toFixed(2)}%
+                                  </div>
+                               </div>
+                               <div className="text-right">
+                                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Executions</div>
+                                  <div className="text-xl font-mono font-bold flex items-center gap-2 justify-end">
+                                    <ArrowRightLeft className="w-3 h-3 text-primary" /> {sim.tradeCount}
+                                  </div>
+                               </div>
                             </div>
                           </div>
                           
@@ -440,34 +476,48 @@ export default function LiveTradingPage() {
                              >
                                Kill Remote Process
                              </Button>
-                             <Button variant="outline" size="sm" className="h-8 text-[11px]" onClick={() => window.open('/debug', '_blank')}>
+                             <Button variant="outline" size="sm" className="h-8 text-[11px] flex-1" onClick={() => window.open('/debug', '_blank')}>
                                View Server Logs
                              </Button>
                           </div>
 
-                          {/* Stretched Performance Visualization */}
-                          <div className="w-full h-32 bg-black/20 rounded-lg border border-white/5 overflow-hidden">
-                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={sim.chart}>
-                                  <defs>
-                                    <linearGradient id={`color-${pos.id}`} x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.3}/>
-                                      <stop offset="95%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0}/>
-                                    </linearGradient>
-                                  </defs>
-                                  <YAxis domain={['auto', 'auto']} hide />
-                                  <XAxis hide />
-                                  <Area 
-                                    type="monotone" 
-                                    dataKey="val" 
-                                    stroke={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} 
-                                    fillOpacity={1} 
-                                    fill={`url(#color-${pos.id})`} 
-                                    strokeWidth={2}
-                                    isAnimationActive={false}
-                                  />
-                                </AreaChart>
-                             </ResponsiveContainer>
+                          {/* Bot Visualization Engine */}
+                          <div className="w-full space-y-2">
+                             <div className="flex justify-between items-center px-1">
+                               <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                 <BarChart4 className="w-3 h-3" /> Performance Trend ({pos.timeframe || '1h'})
+                               </span>
+                               <span className="text-[9px] text-muted-foreground font-mono">
+                                 Price: ${sim.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                               </span>
+                             </div>
+                             <div className="w-full h-32 bg-black/20 rounded-lg border border-white/5 overflow-hidden">
+                               <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={sim.chart}>
+                                    <defs>
+                                      <linearGradient id={`color-${pos.id}`} x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0}/>
+                                      </linearGradient>
+                                    </defs>
+                                    <Tooltip 
+                                      contentStyle={{ backgroundColor: '#0D0F11', border: '1px solid #2e2e2e', fontSize: '10px' }}
+                                      labelStyle={{ display: 'none' }}
+                                    />
+                                    <YAxis domain={['auto', 'auto']} hide />
+                                    <XAxis hide />
+                                    <Area 
+                                      type="monotone" 
+                                      dataKey="val" 
+                                      stroke={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} 
+                                      fillOpacity={1} 
+                                      fill={`url(#color-${pos.id})`} 
+                                      strokeWidth={2}
+                                      isAnimationActive={false}
+                                    />
+                                  </AreaChart>
+                               </ResponsiveContainer>
+                             </div>
                           </div>
                         </div>
                       </div>

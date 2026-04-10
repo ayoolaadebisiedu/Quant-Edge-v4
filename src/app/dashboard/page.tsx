@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { 
   TrendingUp, TrendingDown, Wallet, Target, Zap, 
-  Activity, ShieldCheck, Trophy, ArrowRight 
+  Activity, ShieldCheck, Trophy, ArrowRight,
+  ShieldAlert, Clock, CalendarDays
 } from "lucide-react"
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import Link from 'next/link'
 
@@ -28,9 +28,9 @@ const performanceData = [
 const topMovers = [
   { symbol: 'BTC/USDT', price: '64,231.50', change: '+4.2%', up: true },
   { symbol: 'ETH/USDT', price: '3,421.20', change: '+2.1%', up: true },
-  { symbol: 'SOL/USDT', price: '142.55', change: '-1.8%', up: false },
-  { symbol: 'AVAX/USDT', price: '38.12', change: '+6.5%', up: true },
-  { symbol: 'DOT/USDT', price: '7.45', change: '-3.2%', up: false },
+  { symbol: 'NVDA', price: '875.22', change: '+6.8%', up: true },
+  { symbol: 'TSLA', price: '175.05', change: '-3.5%', up: false },
+  { symbol: 'GOLD', price: '2,342.10', change: '+0.8%', up: true },
 ]
 
 export default function DashboardPage() {
@@ -38,103 +38,121 @@ export default function DashboardPage() {
     <div className="flex-1 flex flex-col overflow-auto p-6 space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Trading Dashboard</h1>
-          <p className="text-muted-foreground">Institutional Terminal active. Compliance status: <span className="text-green-500 font-bold uppercase text-xs">Verified</span></p>
+          <h1 className="text-3xl font-bold tracking-tight">Terminal Dashboard</h1>
+          <p className="text-muted-foreground">Institutional Trading Mode. Compliance: <span className="text-green-500 font-bold uppercase text-xs">Verified</span></p>
         </div>
         <div className="flex gap-2">
-          <Badge variant="outline" className="px-3 py-1 bg-primary/10 border-primary/20 text-primary">PROP FIRM MODE</Badge>
-          <Badge variant="secondary" className="px-3 py-1">Paper Trading</Badge>
+          <Badge variant="outline" className="px-3 py-1 bg-primary/10 border-primary/20 text-primary">PROP FIRM ACTIVE</Badge>
+          <Badge variant="secondary" className="px-3 py-1">Phase 1 Evaluation</Badge>
         </div>
       </div>
 
-      {/* Prop Firm Progress Row */}
+      {/* Institutional Prop Firm Progress Card */}
       <Card className="bg-primary/5 border-primary/20 overflow-hidden relative">
         <div className="absolute top-0 right-0 p-4">
-           <Trophy className="w-12 h-12 text-primary opacity-10" />
+           <Trophy className="w-16 h-16 text-primary opacity-5" />
         </div>
         <CardContent className="pt-6">
-           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="space-y-1 text-center md:text-left">
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              <div className="lg:col-span-3 space-y-1">
                  <h2 className="text-lg font-bold flex items-center gap-2">
-                   <ShieldCheck className="w-5 h-5 text-primary" /> Evaluation Goal: Phase 1
+                   <ShieldCheck className="w-5 h-5 text-primary" /> Challenge: Phase 1
                  </h2>
-                 <p className="text-xs text-muted-foreground">Current progress toward 10% Profit Target ($5,000).</p>
+                 <p className="text-xs text-muted-foreground">Profit Target: 10% ($5,000)</p>
+                 <div className="flex gap-2 mt-2">
+                    <Badge variant="outline" className="text-[9px] h-4">MIN 5 DAYS</Badge>
+                    <Badge variant="outline" className="text-[9px] h-4">CONSISTENCY REQ.</Badge>
+                 </div>
               </div>
-              <div className="flex-1 w-full md:max-w-md space-y-2">
+              
+              <div className="lg:col-span-6 space-y-3">
                  <div className="flex justify-between text-xs font-bold uppercase">
-                    <span>Target Progress</span>
+                    <span className="flex items-center gap-1.5"><Target className="w-3 h-3 text-primary" /> Progress to Goal</span>
                     <span className="text-primary">64.2%</span>
                  </div>
-                 <Progress value={64.2} className="h-2" />
+                 <Progress value={64.2} className="h-2.5" />
+                 <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>Current: +$3,210.12</span>
+                    <span>Remaining: $1,789.88</span>
+                 </div>
               </div>
-              <Link href="/live">
-                <Badge variant="secondary" className="hover:bg-primary/20 transition-colors cursor-pointer gap-2 py-1.5 px-3">
-                   Execution Console <ArrowRight className="w-3 h-3" />
-                </Badge>
-              </Link>
+
+              <div className="lg:col-span-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs px-3 py-2 rounded bg-background border border-border">
+                   <div className="flex items-center gap-2 text-muted-foreground">
+                     <CalendarDays className="w-3 h-3" /> Trading Days
+                   </div>
+                   <span className="font-bold">3 / 5</span>
+                </div>
+                <Link href="/live" className="w-full">
+                  <Button variant="secondary" className="w-full h-9 gap-2 text-xs font-bold hover:bg-primary/20 transition-colors">
+                     Open Execution Console <ArrowRight className="w-3 h-3" />
+                  </Button>
+                </Link>
+              </div>
            </div>
         </CardContent>
       </Card>
 
-      {/* Metric Cards */}
+      {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Net Asset Value</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Account Value</CardTitle>
             <Wallet className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$47,502.12</div>
-            <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3 h-3" /> +$1,120.45 (2.41%)
+            <div className="text-2xl font-bold font-mono">$53,210.12</div>
+            <p className="text-xs text-green-500 flex items-center gap-1 mt-1 font-bold">
+              <TrendingUp className="w-3 h-3" /> +$3,210.12 (6.42%)
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Daily Drawdown</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Daily Drawdown</CardTitle>
+            <ShieldAlert className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold font-mono">0.45%</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Limit: 5.0% ($2,500)
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Consistency</CardTitle>
             <Activity className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0.82%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Daily Limit: 5.0%
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Consistency</CardTitle>
-            <Target className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">92.4%</div>
-            <div className="w-full bg-muted rounded-full h-1.5 mt-3">
-              <div className="bg-primary h-1.5 rounded-full" style={{ width: '92.4%' }}></div>
+            <div className="text-2xl font-bold font-mono">92.4%</div>
+            <div className="w-full bg-muted rounded-full h-1 mt-3">
+              <div className="bg-primary h-1 rounded-full" style={{ width: '92.4%' }}></div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">HWM Protection</CardTitle>
-            <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Overall Loss</CardTitle>
+            <Clock className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$48.1k</div>
+            <div className="text-2xl font-bold font-mono">0.82%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              High Water Mark
+              Max Limit: 10.0%
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Equity Curve</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Equity Curve (HWM Trailing)</CardTitle>
+            <Badge variant="outline" className="text-[10px]">Real-time Feed</Badge>
           </CardHeader>
-          <CardContent className="h-[350px]">
+          <CardContent className="h-[350px] pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={performanceData}>
                 <defs>
@@ -144,11 +162,11 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#2e2e2e" />
-                <XAxis dataKey="time" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis hide />
+                <XAxis dataKey="time" stroke="#888" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis domain={['dataMin - 100', 'dataMax + 100']} hide />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1A1E22', border: '1px solid #2e2e2e' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ backgroundColor: '#1A1E22', border: '1px solid #2e2e2e', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff', fontSize: '12px' }}
                 />
                 <Area type="monotone" dataKey="value" stroke="#235299" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} />
               </AreaChart>
@@ -158,21 +176,31 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Movers</CardTitle>
+            <CardTitle className="text-lg">Compliance Alerts</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {topMovers.map((mover) => (
-              <div key={mover.symbol} className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold">{mover.symbol}</div>
-                  <div className="text-sm text-muted-foreground">${mover.price}</div>
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-orange-500/5 border border-orange-500/20">
+               <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+               <div className="text-xs">
+                 <div className="font-bold text-orange-500 uppercase mb-1">Consistency Warning</div>
+                 Your current trade profit represents 65% of your target. Ensure diversified trading to meet consistency requirements.
+               </div>
+            </div>
+            
+            <div className="space-y-3 pt-2">
+              <h4 className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Market Movers</h4>
+              {topMovers.map((mover) => (
+                <div key={mover.symbol} className="flex items-center justify-between group cursor-pointer hover:bg-muted/30 p-1.5 rounded transition-colors">
+                  <div>
+                    <div className="text-sm font-bold">{mover.symbol}</div>
+                    <div className="text-[10px] text-muted-foreground">${mover.price}</div>
+                  </div>
+                  <Badge variant={mover.up ? "default" : "destructive"} className={mover.up ? "bg-green-500/10 text-green-500 border-none h-6" : "bg-red-500/10 text-red-500 border-none h-6"}>
+                    {mover.change}
+                  </Badge>
                 </div>
-                <Badge variant={mover.up ? "default" : "destructive"} className={mover.up ? "bg-green-500/20 text-green-500 hover:bg-green-500/30" : "bg-red-500/20 text-red-500 hover:bg-red-500/30"}>
-                  {mover.up ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-                  {mover.change}
-                </Badge>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>

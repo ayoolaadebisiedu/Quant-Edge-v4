@@ -23,7 +23,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
-import { collection, query, orderBy, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, serverTimestamp } from 'firebase/firestore'
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { INITIAL_MARKET_DATA } from '../screener/page'
 import Link from 'next/link'
@@ -51,12 +51,11 @@ export default function LiveTradingPage() {
   const [activeTrades, setActiveTrades] = useState<LiveTrade[]>([])
   const [logs, setLogs] = useState<string[]>([])
   const [equity, setEquity] = useState(50000.00)
-  const [hwm, setHwm] = useState(50000.00) // High Water Mark
+  const [hwm, setHwm] = useState(50000.00) 
   const [dailyStartingEquity] = useState(50000.00)
   const [tradingDays] = useState(1)
   const [isAccountSuspended, setIsAccountSuspended] = useState(false)
   
-  // Risk Calculator State
   const [calcRiskPct, setCalcRiskPct] = useState("1")
   const [calcStopLoss, setCalcStopLoss] = useState("500")
   const [calcResult, setCalcResult] = useState<{size: string, margin: string} | null>(null)
@@ -71,18 +70,15 @@ export default function LiveTradingPage() {
   const logEndRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
-  // Prop Firm Thresholds
-  const DAILY_LOSS_LIMIT = 0.05 // 5%
-  const MAX_DRAWDOWN_LIMIT = 0.10 // 10%
-  const PROFIT_TARGET_PHASE1 = 0.10 // 10%
+  const DAILY_LOSS_LIMIT = 0.05 
+  const MAX_DRAWDOWN_LIMIT = 0.10 
+  const PROFIT_TARGET_PHASE1 = 0.10 
   const INITIAL_BALANCE = 50000.00
 
+  // Fetch user strategies - Removed sorting for reliability
   const strategiesQuery = useMemoFirebase(() => {
     if (!db || !user) return null
-    return query(
-      collection(db, 'users', user.uid, 'strategies'),
-      orderBy('updatedAt', 'desc')
-    )
+    return collection(db, 'users', user.uid, 'strategies')
   }, [db, user])
 
   const { data: savedStrategies, isLoading: isLoadingStrategies } = useCollection<any>(strategiesQuery)
@@ -93,12 +89,10 @@ export default function LiveTradingPage() {
     }
   }, [logs])
 
-  // Real-time Equity and Risk Engine
   useEffect(() => {
     if (!isLive || isAccountSuspended) return;
 
     const interval = setInterval(() => {
-      // 1. Update active trades
       setActiveTrades(current => current.map(trade => {
         const change = (Math.random() - 0.5) * 50;
         const currentVal = parseFloat(trade.currentPrice.replace(/[^0-9.]/g, ''));
@@ -112,17 +106,14 @@ export default function LiveTradingPage() {
         };
       }));
 
-      // 2. Update Equity & HWM
       setEquity(prev => {
         const pnlTick = (Math.random() - 0.48) * 25;
         const nextEquity = prev + pnlTick;
 
-        // Trailing Drawdown Logic
         if (nextEquity > hwm) {
           setHwm(nextEquity);
         }
 
-        // Compliance Checks
         const dailyLoss = ((dailyStartingEquity - nextEquity) / dailyStartingEquity);
         const totalDrawdown = ((hwm - nextEquity) / hwm);
 
@@ -139,7 +130,6 @@ export default function LiveTradingPage() {
         return nextEquity;
       });
 
-      // 3. Simulated News Alerts & Guardrails
       if (Math.random() > 0.95) {
         setLogs(prev => [...prev.slice(-40), "[GUARDRAIL] High-Impact News approaching (NFP). Trading disabled for 5m."]);
       }
@@ -167,6 +157,7 @@ export default function LiveTradingPage() {
       name: "GoldenCross (EMA 8/21)",
       code: `class GoldenCross(Strategy):
     def should_long(self):
+        # go long when the EMA 8 is above the EMA 21
         short_ema = ta.ema(self.candles, 8)
         long_ema = ta.ema(self.candles, 21)
         return short_ema > long_ema
@@ -226,7 +217,7 @@ export default function LiveTradingPage() {
   }
 
   const progressToTarget = Math.max(0, Math.min(100, ((equity - INITIAL_BALANCE) / (INITIAL_BALANCE * PROFIT_TARGET_PHASE1)) * 100));
-  const maxDayProfit = 0.65; // Simulated 65% of target in one day
+  const maxDayProfit = 0.65; 
   const isUnbalanced = maxDayProfit > 0.5;
 
   return (
@@ -260,9 +251,13 @@ export default function LiveTradingPage() {
                     <Label className="text-right">Strategy</Label>
                     <div className="col-span-3 space-y-2">
                       <Select value={config.strategy} onValueChange={(v) => setConfig({...config, strategy: v})}>
-                        <SelectTrigger><SelectValue placeholder={isLoadingStrategies ? "Loading..." : "Select Strategy"} /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={isLoadingStrategies ? "Loading strategies..." : "Select Strategy"} /></SelectTrigger>
                         <SelectContent>
-                          {savedStrategies?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                          {savedStrategies && savedStrategies.length > 0 ? (
+                            savedStrategies.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)
+                          ) : (
+                            <SelectItem value="none" disabled>No saved strategies</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                       {(!savedStrategies || savedStrategies.length === 0) && !isLoadingStrategies && (

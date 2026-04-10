@@ -52,10 +52,7 @@ export default function EditorPage() {
   // Fetch user strategies
   const strategiesQuery = useMemoFirebase(() => {
     if (!db || !user) return null
-    return query(
-      collection(db, 'users', user.uid, 'strategies'),
-      orderBy('updatedAt', 'desc')
-    )
+    return collection(db, 'users', user.uid, 'strategies')
   }, [db, user])
 
   const { data: savedStrategies, isLoading: loadingStrategies } = useCollection<any>(strategiesQuery)

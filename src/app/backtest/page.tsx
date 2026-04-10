@@ -13,10 +13,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   History, Coins, TrendingUp, 
   FileText, PlayCircle, Loader2,
-  CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight, Sparkles, Plus
+  CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight, Sparkles, Plus, ArrowRight
 } from "lucide-react"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
-import { collection, query, orderBy, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, doc, serverTimestamp } from 'firebase/firestore'
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
@@ -46,16 +46,12 @@ export default function BacktestPage() {
   } | null>(null)
   
   const [selectedStrategy, setSelectedStrategy] = useState<string>("")
-  
   const logEndRef = useRef<HTMLDivElement>(null)
 
-  // Fetch user strategies
+  // Fetch user strategies - Removed sorting to ensure all documents appear without index requirements
   const strategiesQuery = useMemoFirebase(() => {
     if (!db || !user) return null
-    return query(
-      collection(db, 'users', user.uid, 'strategies'),
-      orderBy('updatedAt', 'desc')
-    )
+    return collection(db, 'users', user.uid, 'strategies')
   }, [db, user])
 
   const { data: savedStrategies, isLoading: isLoadingStrategies } = useCollection<any>(strategiesQuery)
@@ -74,6 +70,7 @@ export default function BacktestPage() {
       name: "GoldenCross (EMA 8/21)",
       code: `class GoldenCross(Strategy):
     def should_long(self):
+        # go long when the EMA 8 is above the EMA 21
         short_ema = ta.ema(self.candles, 8)
         long_ema = ta.ema(self.candles, 21)
         return short_ema > long_ema
@@ -344,5 +341,3 @@ export default function BacktestPage() {
     </div>
   )
 }
-
-import { ArrowRight } from 'lucide-react'

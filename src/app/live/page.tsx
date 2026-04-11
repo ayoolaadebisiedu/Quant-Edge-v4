@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +17,7 @@ import {
   Terminal, Loader2, Calculator,
   Lock, TrendingUp, Clock, Server, Globe,
   BarChart4, ArrowRightLeft, Coins, Landmark, ArrowRight,
-  Wallet
+  Wallet, Sparkles
 } from "lucide-react"
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid
@@ -115,6 +115,7 @@ export default function LiveTradingPage() {
     }
   }, [logs])
 
+  // Live Simulation Interval
   useEffect(() => {
     if (!persistentPositions || persistentPositions.length === 0) {
       setLivePrices({})
@@ -142,7 +143,6 @@ export default function LiveTradingPage() {
           const change = (Math.random() - 0.495) * (basePrice * 0.001) // subtle random walk
           const newPrice = currentData.price + change
           
-          // Calculate PnL based on entry price and quantity
           const diff = newPrice - pos.entryPrice
           const pnl = (diff / pos.entryPrice) * 100 * (pos.side === 'LONG' ? 1 : -1)
           const profitUsd = diff * (pos.quantity || 1) * (pos.side === 'LONG' ? 1 : -1)
@@ -157,10 +157,26 @@ export default function LiveTradingPage() {
         })
         return next
       })
-    }, 3000)
+    }, 2000) // Faster interval for "money moving" feel
 
     return () => clearInterval(interval)
   }, [persistentPositions])
+
+  // Aggregate Session Metrics
+  const sessionMetrics = useMemo(() => {
+    if (!persistentPositions) return { totalEquity: 0, totalProfit: 0, invested: 0 }
+    return persistentPositions.reduce((acc, pos) => {
+      const sim = livePrices[pos.id] || { profitUsd: 0 }
+      const invested = pos.investAmt || 0
+      return {
+        totalEquity: acc.totalEquity + invested + sim.profitUsd,
+        totalProfit: acc.totalProfit + sim.profitUsd,
+        invested: acc.invested + invested
+      }
+    }, { totalEquity: 0, totalProfit: 0, invested: 0 })
+  }, [persistentPositions, livePrices])
+
+  const floatingNetWorth = (profile?.vaultBalance || 0) + (profile?.tradingBalance || 0) + sessionMetrics.totalEquity;
 
   const handleTransfer = async () => {
     if (!db || !user || !profile) return
@@ -194,7 +210,7 @@ export default function LiveTradingPage() {
     const investAmt = parseFloat(config.amount)
     
     if (investAmt > (profile.tradingBalance || 0)) {
-      toast({ variant: "destructive", title: "Deployment Blocked", description: "Insufficient trading balance. Transfer funds from vault first." })
+      toast({ variant: "destructive", title: "Deployment Blocked", description: "Insufficient trading balance." })
       return
     }
 
@@ -204,7 +220,7 @@ export default function LiveTradingPage() {
     setLogs(prev => [...prev, 
       `[SYSTEM] Booting Compliance Engine...`, 
       `[AWS] Transmitting deployment intent to ${config.worker}...`,
-      `[AUTH] Authenticating with ${config.broker} via secure vault...`, 
+      `[AUTH] Authenticating with ${config.broker}...`, 
       `[SUCCESS] Worker assigned. Execution starting.`
     ])
     
@@ -232,7 +248,6 @@ export default function LiveTradingPage() {
     }
 
     try {
-      // Deduct from trading balance
       await setDocumentNonBlocking(doc(db, 'users', user.uid), {
         tradingBalance: profile.tradingBalance - investAmt,
         updatedAt: serverTimestamp()
@@ -243,7 +258,7 @@ export default function LiveTradingPage() {
         positionData,
         { merge: true }
       )
-      toast({ title: "Remote Bot Deployed", description: `Strategy logic now executing on AWS instance ${config.worker}.` })
+      toast({ title: "Remote Bot Deployed", description: `Strategy logic now executing on ${config.worker}.` })
     } catch (e) {
       toast({ variant: "destructive", title: "Deployment Failed" })
     } finally {
@@ -258,19 +273,16 @@ export default function LiveTradingPage() {
       if (!pos) return
 
       const sim = livePrices[posId] || { price: pos.entryPrice, pnl: 0, profitUsd: 0, tradeCount: 1 }
-      
-      // Calculate return amount (Investment + Profit)
-      const originalInvestment = pos.investAmt || ((pos.quantity || 0) * (pos.entryPrice || 0))
-      const returnAmt = originalInvestment + (sim?.profitUsd || 0)
+      const originalInvestment = pos.investAmt || 0
+      const returnAmt = originalInvestment + sim.profitUsd
 
-      // 1. Create a permanent Trade Record for History
       const tradeData = {
         id: doc(collection(db, 'temp')).id,
         tradingAccountId: 'default',
         instrumentId: pos.instrumentId,
         strategyId: pos.strategyId,
         strategyName: pos.strategyName,
-        side: pos.side === 'LONG' ? 'SELL' : 'BUY', // Closing side
+        side: pos.side === 'LONG' ? 'SELL' : 'BUY',
         executedPrice: sim.price,
         executedQuantity: pos.quantity,
         pnl: sim.pnl,
@@ -282,7 +294,6 @@ export default function LiveTradingPage() {
       
       await addDocumentNonBlocking(collection(db, 'users', user.uid, 'tradingAccounts', 'default', 'trades'), tradeData)
 
-      // 2. Add back to trading balance and update total net worth
       const newTradingBalance = profile.tradingBalance + returnAmt
       await setDocumentNonBlocking(doc(db, 'users', user.uid), {
         tradingBalance: newTradingBalance,
@@ -290,11 +301,10 @@ export default function LiveTradingPage() {
         updatedAt: serverTimestamp()
       }, { merge: true })
 
-      // 3. Remove active position
       await deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'tradingAccounts', 'default', 'positions', posId))
       
-      setLogs(prev => [...prev, `[AWS] Kill signal sent to worker for ${posId}.`, `[SUCCESS] Position closed and archived to history.`])
-      toast({ title: "Position Closed", description: `Market order executed. $${returnAmt.toLocaleString(undefined, {minimumFractionDigits: 2})} returned to Trading Balance.` })
+      setLogs(prev => [...prev, `[AWS] Kill signal sent to worker for ${posId}.`, `[SUCCESS] Position closed.`])
+      toast({ title: "Position Closed", description: `$${returnAmt.toLocaleString()} returned to Trading Balance.` })
     } catch (e) {
       toast({ variant: "destructive", title: "Error closing position" })
     }
@@ -408,10 +418,41 @@ export default function LiveTradingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-6">
+          {/* Real-time Session Equity Card */}
+          <Card className="bg-primary/10 border-primary/20 animate-in fade-in slide-in-from-left-4 duration-500">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
+                Live Session Equity
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="text-2xl font-bold font-mono text-white tracking-tighter">
+                 ${sessionMetrics.totalEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+               </div>
+               <div className="flex items-center gap-2">
+                  <div className={`text-[10px] font-bold flex items-center gap-1 ${sessionMetrics.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {sessionMetrics.totalProfit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                    {sessionMetrics.totalProfit >= 0 ? '+' : ''}${sessionMetrics.totalProfit.toFixed(2)}
+                  </div>
+                  <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Floating PnL</span>
+               </div>
+               <div className="pt-2 border-t border-white/5">
+                  <div className="flex justify-between text-[9px] text-muted-foreground uppercase font-bold">
+                    <span>Invested Capital</span>
+                    <span>${sessionMetrics.invested.toLocaleString()}</span>
+                  </div>
+               </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-card/40 border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2">
-                <Landmark className="w-3.5 h-3.5" /> Balances
+                <Landmark className="w-3.5 h-3.5" /> Static Balances
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -429,21 +470,21 @@ export default function LiveTradingPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-primary/5 border-primary/20">
+          <Card className="bg-black/40 border-primary/10">
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
-                Account Equity
-                <TrendingUp className="w-3.5 h-3.5" />
+                Floating Net Worth
+                <Sparkles className="w-3.5 h-3.5" />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-2xl font-bold font-mono">${(profile?.totalBalance || 100000).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              <div className="text-2xl font-bold font-mono">${floatingNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-[9px] uppercase font-bold tracking-wider">
                   <span>Goal: $110,000</span>
-                  <span className="text-primary">32.1%</span>
+                  <span className="text-primary">{((floatingNetWorth / 110000) * 100).toFixed(1)}%</span>
                 </div>
-                <Progress value={32.1} className="h-1" />
+                <Progress value={(floatingNetWorth / 110000) * 100} className="h-1" />
               </div>
             </CardContent>
           </Card>
@@ -551,7 +592,6 @@ export default function LiveTradingPage() {
                             </div>
                           </div>
 
-                          {/* Equity & Balance Increments Row */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-3 rounded-lg bg-black/20 border border-white/5">
                             <div>
                               <div className="text-[8px] text-muted-foreground uppercase font-bold flex items-center gap-1">
@@ -617,34 +657,14 @@ export default function LiveTradingPage() {
                                       </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#2e2e2e" vertical={false} />
-                                    <XAxis 
-                                      dataKey="t" 
-                                      hide={false} 
-                                      axisLine={false} 
-                                      tickLine={false} 
-                                      tick={{ fontSize: 8, fill: '#555' }} 
-                                    />
-                                    <YAxis 
-                                      domain={['auto', 'auto']} 
-                                      axisLine={false} 
-                                      tickLine={false} 
-                                      tick={{ fontSize: 8, fill: '#555' }} 
-                                      orientation="right"
-                                    />
+                                    <XAxis dataKey="t" hide={false} axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: '#555' }} />
+                                    <YAxis domain={['auto', 'auto']} axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: '#555' }} orientation="right" />
                                     <Tooltip 
                                       contentStyle={{ backgroundColor: '#0D0F11', border: '1px solid #2e2e2e', borderRadius: '6px', fontSize: '9px' }}
                                       itemStyle={{ color: isProfit ? '#38D94F' : '#F03C3C' }}
                                       formatter={(value: number) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 'Price']}
                                     />
-                                    <Area 
-                                      type="monotone" 
-                                      dataKey="val" 
-                                      stroke={isProfit ? "#38D94F" : "#F03C3C"} 
-                                      fillOpacity={1} 
-                                      fill={`url(#color-${pos.id})`} 
-                                      strokeWidth={2}
-                                      isAnimationActive={false}
-                                    />
+                                    <Area type="monotone" dataKey="val" stroke={isProfit ? "#38D94F" : "#F03C3C"} fillOpacity={1} fill={`url(#color-${pos.id})`} strokeWidth={2} isAnimationActive={false} />
                                   </AreaChart>
                                </ResponsiveContainer>
                              </div>

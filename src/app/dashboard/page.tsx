@@ -7,9 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { 
-  TrendingUp, Wallet, Target, Zap, 
-  Activity, ShieldCheck, Trophy, ArrowRight,
-  ShieldAlert, Clock, CalendarDays, Database, Sparkles, Coins, Landmark
+  ShieldCheck, Trophy, ArrowRight,
+  ShieldAlert, CalendarDays, Sparkles, Coins, Landmark, Zap
 } from "lucide-react"
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -19,7 +18,7 @@ import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from '@
 import { doc, serverTimestamp, collection, query, where } from 'firebase/firestore'
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { useToast } from '@/hooks/use-toast'
-import { INITIAL_MARKET_DATA } from '../screener/page'
+import { INITIAL_MARKET_DATA } from '@/lib/market-data'
 
 const performanceData = [
   { time: '09:00', value: 45200 },
@@ -44,21 +43,18 @@ export default function DashboardPage() {
   const { user } = useUser()
   const { toast } = useToast()
 
-  // 1. Fetch User Profile
   const profileRef = useMemoFirebase(() => {
     if (!db || !user) return null
     return doc(db, 'users', user.uid)
   }, [db, user])
   const { data: profile, isLoading } = useDoc<any>(profileRef)
 
-  // 2. Fetch Active Positions for Live Equity
   const positionsQuery = useMemoFirebase(() => {
     if (!db || !user) return null
     return query(collection(db, 'users', user.uid, 'tradingAccounts', 'default', 'positions'), where('status', '==', 'open'))
   }, [db, user])
   const { data: positions } = useCollection<any>(positionsQuery)
 
-  // 3. Fetch Trades for Trading Days calculation
   const tradesQuery = useMemoFirebase(() => {
     if (!db || !user) return null
     return collection(db, 'users', user.uid, 'tradingAccounts', 'default', 'trades')
@@ -67,7 +63,6 @@ export default function DashboardPage() {
 
   const [unrealizedPnl, setUnrealizedPnl] = useState(0)
 
-  // Initialize new user with $100,000 if profile doesn't exist
   useEffect(() => {
     if (user && db && !isLoading && !profile) {
       const initialProfile = {
@@ -89,7 +84,6 @@ export default function DashboardPage() {
     }
   }, [user, db, profile, isLoading])
 
-  // Live PnL Simulation for Dashboard
   useEffect(() => {
     if (!positions || positions.length === 0) {
       setUnrealizedPnl(0)
@@ -118,7 +112,6 @@ export default function DashboardPage() {
     invested: positions?.reduce((acc: number, pos: any) => acc + (pos.investAmt || 0), 0) || 0
   }), [profile, unrealizedPnl, positions])
 
-  // Calculate unique trading days
   const tradingDays = useMemo(() => {
     if (!trades || trades.length === 0) return 0
     const uniqueDays = new Set(trades.map((t: any) => {
@@ -171,7 +164,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Account Balances Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-primary/10 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -207,7 +199,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Institutional Prop Firm Progress Card */}
       <Card className="bg-primary/5 border-primary/20 overflow-hidden relative">
         <div className="absolute top-0 right-0 p-4">
            <Trophy className="w-16 h-16 text-primary opacity-5" />
@@ -227,7 +218,7 @@ export default function DashboardPage() {
               
               <div className="lg:col-span-6 space-y-3">
                  <div className="flex justify-between text-xs font-bold uppercase">
-                    <span className="flex items-center gap-1.5"><Target className="w-3 h-3 text-primary" /> Progress to Goal</span>
+                    <span className="flex items-center gap-1.5">Progress to Goal</span>
                     <span className="text-primary">{progress.toFixed(1)}%</span>
                  </div>
                  <Progress value={progress} className="h-2.5" />

@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-trading",
+      "description": "Abstract quantum network visualization representing high-frequency data and algorithmic trading",
+      "imageUrl": "https://picsum.photos/seed/quant-hero/1200/800",
+      "imageHint": "quantum network"
+    },
+    {
+      "id": "market-chart",
+      "description": "Financial market candlestick chart",
+      "imageUrl": "https://picsum.photos/seed/quant2/800/600",
+      "imageHint": "stock chart"
+    },
+    {
+      "id": "heatmap-bg",
+      "description": "Market heatmap visualization",
+      "imageUrl": "https://picsum.photos/seed/quant3/1000/600",
+      "imageHint": "data visualization"
+    },
+    {
+      "id": "auth-bg",
+      "description": "Abstract glowing geometric network design",
+      "imageUrl": "https://picsum.photos/seed/quant4/1200/1200",
+      "imageHint": "abstract network"
+    }
+  ]
 }

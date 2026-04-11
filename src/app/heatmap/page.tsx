@@ -4,8 +4,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Map as MapIcon, Maximize2, Layers, TrendingUp, TrendingDown } from "lucide-react"
-import { INITIAL_MARKET_DATA } from '../screener/page'
+import { Maximize2, Layers, TrendingUp, TrendingDown } from "lucide-react"
+import { INITIAL_MARKET_DATA } from '@/lib/market-data'
 
 export default function MarketMapPage() {
   const [data, setData] = useState(INITIAL_MARKET_DATA)

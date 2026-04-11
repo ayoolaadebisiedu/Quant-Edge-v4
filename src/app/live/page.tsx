@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -12,12 +13,12 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger 
 } from "@/components/ui/dialog"
 import { 
-  Play, Activity, Zap, ShieldCheck, 
+  Play, Activity, Zap, 
   ArrowUpRight, ArrowDownRight,
   Terminal, Loader2, Calculator,
-  Lock, TrendingUp, Clock, Server, Globe,
-  BarChart4, ArrowRightLeft, Coins, Landmark, ArrowRight,
-  Wallet, Sparkles, Database
+  Clock, Globe,
+  BarChart4, ArrowRightLeft, Coins, Landmark,
+  Wallet, Sparkles
 } from "lucide-react"
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid
@@ -26,7 +27,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from '@/firebase'
 import { collection, doc, serverTimestamp, query, where } from 'firebase/firestore'
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates'
-import { INITIAL_MARKET_DATA } from '../screener/page'
+import { INITIAL_MARKET_DATA } from '@/lib/market-data'
 import { testAlpacaConnection } from '@/app/actions/alpaca-actions'
 
 function RuntimeDisplay({ entryTime }: { entryTime: any }) {
@@ -235,7 +236,6 @@ export default function LiveTradingPage() {
       `[AWS] Transmitting deployment intent to ${config.worker}...`,
     ])
 
-    // Real Alpaca SDK connection check if selected
     if (config.broker === 'alpaca') {
       if (profile.alpacaKey && profile.alpacaSecret) {
         setLogs(prev => [...prev, `[SDK] Authenticating with Alpaca API...`]);
@@ -512,25 +512,6 @@ export default function LiveTradingPage() {
                <Button variant="outline" size="sm" className="w-full text-[10px] h-7 gap-2" onClick={() => setIsTransferOpen(true)}>
                  <ArrowRightLeft className="w-3 h-3" /> Move Funds
                </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-black/40 border-primary/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
-                Floating Net Worth
-                <Sparkles className="w-3.5 h-3.5" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-2xl font-bold font-mono">${floatingNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[9px] uppercase font-bold tracking-wider">
-                  <span>Goal: $110,000</span>
-                  <span className="text-primary">{((floatingNetWorth / 110000) * 100).toFixed(1)}%</span>
-                </div>
-                <Progress value={(floatingNetWorth / 110000) * 100} className="h-1" />
-              </div>
             </CardContent>
           </Card>
 

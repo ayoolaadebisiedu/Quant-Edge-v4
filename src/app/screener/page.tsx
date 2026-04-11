@@ -10,52 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  TrendingUp, TrendingDown, Filter, Download, 
-  ChevronRight, ArrowUpDown, Search, Star, Loader2,
-  Globe, Zap, Activity, BrainCircuit, BarChart3,
-  ShieldCheck, Flame, Layers
+  ArrowUpDown, Search, Star, Loader2,
+  BrainCircuit, Flame, Download
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-
-export interface MarketItem {
-  symbol: string;
-  price: number;
-  change: number;
-  volume: string;
-  rsi: number;
-  status: string;
-  market: 'crypto' | 'forex' | 'stocks' | 'commodities';
-  isFavorite?: boolean;
-  // Advanced Metrics
-  rvol: number; // Relative Volume
-  volatility: number;
-  sentiment: number; // -1 to 1
-  pattern?: string;
-  // Asset Specific
-  peRatio?: number; // Stocks
-  fundingRate?: string; // Crypto
-  pipValue?: string; // Forex
-}
-
-export const INITIAL_MARKET_DATA: MarketItem[] = [
-  // CRYPTO
-  { symbol: 'BTC/USDT', price: 64231.50, change: 4.2, volume: '2.4B', rsi: 65, status: 'Bullish', market: 'crypto', rvol: 1.2, volatility: 0.8, sentiment: 0.85, pattern: 'Cup & Handle', fundingRate: '0.01%' },
-  { symbol: 'ETH/USDT', price: 3421.20, change: 2.1, volume: '1.1B', rsi: 58, status: 'Neutral', market: 'crypto', rvol: 0.9, volatility: 1.2, sentiment: 0.4, fundingRate: '0.008%' },
-  { symbol: 'SOL/USDT', price: 142.55, change: -1.8, volume: '800M', rsi: 42, status: 'Bearish', market: 'crypto', rvol: 1.5, volatility: 2.1, sentiment: -0.2, pattern: 'Double Top', fundingRate: '0.015%' },
-  
-  // STOCKS
-  { symbol: 'NVDA', price: 875.22, change: 6.8, volume: '45M', rsi: 78, status: 'Overbought', market: 'stocks', rvol: 2.4, volatility: 1.5, sentiment: 0.95, pattern: 'Breakout', peRatio: 72.4 },
-  { symbol: 'AAPL', price: 182.41, change: 1.2, volume: '54M', rsi: 62, status: 'Bullish', market: 'stocks', rvol: 0.8, volatility: 0.4, sentiment: 0.6, peRatio: 28.1 },
-  { symbol: 'TSLA', price: 175.05, change: -3.5, volume: '82M', rsi: 29, status: 'Oversold', market: 'stocks', rvol: 1.9, volatility: 2.5, sentiment: -0.8, pattern: 'Falling Wedge', peRatio: 41.2 },
-  
-  // FOREX
-  { symbol: 'EUR/USD', price: 1.0845, change: 0.15, volume: '4.2T', rsi: 51, status: 'Neutral', market: 'forex', rvol: 0.7, volatility: 0.2, sentiment: 0.1, pipValue: '10.00' },
-  { symbol: 'GBP/JPY', price: 191.22, change: -0.42, volume: '1.8T', rsi: 38, status: 'Bearish', market: 'forex', rvol: 1.1, volatility: 0.9, sentiment: -0.3, pipValue: '6.50' },
-  
-  // COMMODITIES
-  { symbol: 'GOLD (XAU)', price: 2342.10, change: 0.85, volume: '420B', rsi: 68, status: 'Bullish', market: 'commodities', rvol: 1.3, volatility: 0.5, sentiment: 0.7, pattern: 'Ascending Triangle' },
-  { symbol: 'CRUDE OIL', price: 82.45, change: -1.2, volume: '180B', rsi: 44, status: 'Neutral', market: 'commodities', rvol: 0.9, volatility: 1.8, sentiment: -0.1 }
-]
+import { MarketItem, INITIAL_MARKET_DATA } from '@/lib/market-data'
 
 export default function ScreenerPage() {
   const [data, setData] = useState<MarketItem[]>(INITIAL_MARKET_DATA)
@@ -66,7 +25,6 @@ export default function ScreenerPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  // Real-time Data Sync (Binance Public API for Crypto)
   useEffect(() => {
     const fetchRealPrices = async () => {
       try {
@@ -79,19 +37,15 @@ export default function ScreenerPage() {
             const apiMatch = tickerData.find((t: any) => t.symbol === apiSymbol);
             
             if (apiMatch) {
-              const newPrice = parseFloat(apiMatch.lastPrice);
-              const newChange = parseFloat(apiMatch.priceChangePercent);
-              
               return {
                 ...item,
-                price: newPrice,
-                change: newChange,
-                rsi: Math.round(item.rsi + (Math.random() - 0.5) * 2) // Maintain simulated indicators
+                price: parseFloat(apiMatch.lastPrice),
+                change: parseFloat(apiMatch.priceChangePercent),
+                rsi: Math.round(item.rsi + (Math.random() - 0.5) * 2)
               }
             }
           }
           
-          // Simulation for non-crypto or failed matches
           const volatilityFactor = item.market === 'stocks' ? 0.0008 : 0.0005
           const priceChange = item.price * (Math.random() - 0.5) * volatilityFactor
           return {
@@ -106,7 +60,7 @@ export default function ScreenerPage() {
     };
 
     fetchRealPrices();
-    const interval = setInterval(fetchRealPrices, 10000); // Institutional polling frequency
+    const interval = setInterval(fetchRealPrices, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -171,7 +125,6 @@ export default function ScreenerPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Market Intelligence Sidebar */}
         <div className="lg:col-span-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="pb-3 px-4 pt-4">
@@ -221,7 +174,6 @@ export default function ScreenerPage() {
           </Card>
         </div>
 
-        {/* Main Screener Table */}
         <Card className="lg:col-span-3 border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
           <CardHeader className="p-0 border-b border-border shrink-0">
             <Tabs value={marketFilter} onValueChange={setMarketFilter} className="w-full">
@@ -338,27 +290,6 @@ export default function ScreenerPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Institutional Tools Footer */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-         {[
-           { icon: ShieldCheck, color: 'text-primary', title: 'Prop Firm Match', desc: 'FTMO Compatible Logic' },
-           { icon: Globe, color: 'text-accent', title: 'Global Sessions', desc: 'London Open Volatility' },
-           { icon: Activity, color: 'text-orange-500', title: 'Unusual Volume', desc: 'SOL, NVDA Spiking' }
-         ].map((tool, i) => (
-           <Card key={i} className="bg-black/40 border-white/5">
-             <CardContent className="p-3 flex items-center gap-3">
-               <div className={`p-1.5 rounded bg-muted/20 shrink-0`}>
-                 <tool.icon className={`w-4 h-4 ${tool.color}`} />
-               </div>
-               <div className="min-w-0">
-                 <div className="text-[9px] font-bold uppercase text-muted-foreground truncate">{tool.title}</div>
-                 <div className="text-[11px] text-white font-medium truncate">{tool.desc}</div>
-               </div>
-             </CardContent>
-           </Card>
-         ))}
       </div>
     </div>
   )

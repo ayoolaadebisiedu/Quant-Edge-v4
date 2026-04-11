@@ -29,6 +29,54 @@ export async function testAlpacaConnection(config: AlpacaConfig) {
   }
 }
 
+export async function placeAlpacaOrder(params: {
+  config: AlpacaConfig;
+  symbol: string;
+  qty: number;
+  side: 'buy' | 'sell';
+  type: 'market' | 'limit';
+}) {
+  try {
+    const alpaca = new Alpaca({
+      keyId: params.config.keyId,
+      secretKey: params.config.secretKey,
+      paper: params.config.paper ?? true,
+    });
+
+    const order = await alpaca.createOrder({
+      symbol: params.symbol.replace('/', ''), // Alpaca doesn't use slashes
+      qty: params.qty,
+      side: params.side,
+      type: params.type,
+      time_in_force: 'gtc',
+    });
+
+    return { success: true, orderId: order.id, status: order.status };
+  } catch (error: any) {
+    console.error("Alpaca Order Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function closeAlpacaPosition(params: {
+  config: AlpacaConfig;
+  symbol: string;
+}) {
+  try {
+    const alpaca = new Alpaca({
+      keyId: params.config.keyId,
+      secretKey: params.config.secretKey,
+      paper: params.config.paper ?? true,
+    });
+
+    await alpaca.closePosition(params.symbol.replace('/', ''));
+    return { success: true };
+  } catch (error: any) {
+    console.error("Alpaca Close Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getAlpacaHistoricalBars(params: {
   config: AlpacaConfig;
   symbol: string;
@@ -43,10 +91,9 @@ export async function getAlpacaHistoricalBars(params: {
       paper: params.config.paper ?? true,
     });
 
-    // In a production app, you'd map timeframe strings to alpaca.newTimeframe
-    // For the prototype, we simulate the fetch response structure
+    // For simplicity in the prototype, we use a 1-hour timeframe
     const bars = alpaca.getBarsV2(
-      params.symbol,
+      params.symbol.replace('/', ''),
       {
         start: params.start,
         end: params.end,

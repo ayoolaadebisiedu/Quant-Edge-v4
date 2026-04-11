@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -17,7 +16,8 @@ import {
   ArrowUpRight, ArrowDownRight,
   Terminal, Loader2, Calculator,
   Lock, TrendingUp, Clock, Server, Globe,
-  BarChart4, ArrowRightLeft, Coins, Landmark, ArrowRight
+  BarChart4, ArrowRightLeft, Coins, Landmark, ArrowRight,
+  Wallet
 } from "lucide-react"
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid
@@ -504,6 +504,9 @@ export default function LiveTradingPage() {
                 <div className="divide-y divide-white/5">
                   {persistentPositions.map(pos => {
                     const sim = livePrices[pos.id] || { price: pos.entryPrice, pnl: 0, profitUsd: 0, tradeCount: pos.tradeCount || 1, chart: [] }
+                    const currentEquity = (pos.investAmt || 0) + sim.profitUsd;
+                    const isProfit = sim.profitUsd >= 0;
+
                     return (
                       <div key={pos.id} className="p-4 lg:p-6 flex flex-col gap-6 hover:bg-white/[0.01] transition-all">
                         <div className="w-full space-y-6">
@@ -529,14 +532,14 @@ export default function LiveTradingPage() {
                             <div className="flex gap-4 lg:gap-8 items-center justify-between w-full md:w-auto border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
                                <div className="text-left md:text-right">
                                   <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Net Profit</div>
-                                  <div className={`text-base lg:text-xl font-mono font-bold ${sim.profitUsd >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                    {sim.profitUsd >= 0 ? '+' : ''}${sim.profitUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                  <div className={`text-base lg:text-xl font-mono font-bold ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                                    {isProfit ? '+' : ''}${sim.profitUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                   </div>
                                </div>
                                <div className="text-left md:text-right">
                                   <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">PnL (%)</div>
-                                  <div className={`text-base lg:text-xl font-mono font-bold ${sim.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                    {sim.pnl >= 0 ? '+' : ''}{sim.pnl.toFixed(2)}%
+                                  <div className={`text-base lg:text-xl font-mono font-bold ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                                    {isProfit ? '+' : ''}{sim.pnl.toFixed(2)}%
                                   </div>
                                </div>
                                <div className="text-right">
@@ -545,6 +548,39 @@ export default function LiveTradingPage() {
                                     <ArrowRightLeft className="w-3.5 h-3.5 text-primary" /> {sim.tradeCount}
                                   </div>
                                </div>
+                            </div>
+                          </div>
+
+                          {/* Equity & Balance Increments Row */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-3 rounded-lg bg-black/20 border border-white/5">
+                            <div>
+                              <div className="text-[8px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                <Coins className="w-2.5 h-2.5" /> Invested Equity
+                              </div>
+                              <div className="text-xs font-mono font-bold text-white">
+                                ${pos.investAmt?.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[8px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                <Wallet className="w-2.5 h-2.5" /> Live Equity (New Bal)
+                              </div>
+                              <div className={`text-xs font-mono font-bold flex items-center gap-1 ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                                ${currentEquity.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                              </div>
+                            </div>
+                            <div className="hidden sm:block">
+                              <div className="text-[8px] text-muted-foreground uppercase font-bold">Growth/Decay</div>
+                              <div className={`text-[10px] font-bold ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                                {isProfit ? 'INCREMENTING' : 'DECREMENTING'}
+                              </div>
+                            </div>
+                            <div className="hidden sm:block text-right">
+                              <div className="text-[8px] text-muted-foreground uppercase font-bold">Session Delta</div>
+                              <div className={`text-xs font-mono font-bold ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                                {isProfit ? '+' : ''}${sim.profitUsd.toFixed(2)}
+                              </div>
                             </div>
                           </div>
                           
@@ -576,8 +612,8 @@ export default function LiveTradingPage() {
                                   <AreaChart data={sim.chart} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                                     <defs>
                                       <linearGradient id={`color-${pos.id}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.4}/>
-                                        <stop offset="95%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0}/>
+                                        <stop offset="5%" stopColor={isProfit ? "#38D94F" : "#F03C3C"} stopOpacity={0.4}/>
+                                        <stop offset="95%" stopColor={isProfit ? "#38D94F" : "#F03C3C"} stopOpacity={0}/>
                                       </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#2e2e2e" vertical={false} />
@@ -597,13 +633,13 @@ export default function LiveTradingPage() {
                                     />
                                     <Tooltip 
                                       contentStyle={{ backgroundColor: '#0D0F11', border: '1px solid #2e2e2e', borderRadius: '6px', fontSize: '9px' }}
-                                      itemStyle={{ color: sim.pnl >= 0 ? '#38D94F' : '#F03C3C' }}
+                                      itemStyle={{ color: isProfit ? '#38D94F' : '#F03C3C' }}
                                       formatter={(value: number) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 'Price']}
                                     />
                                     <Area 
                                       type="monotone" 
                                       dataKey="val" 
-                                      stroke={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} 
+                                      stroke={isProfit ? "#38D94F" : "#F03C3C"} 
                                       fillOpacity={1} 
                                       fill={`url(#color-${pos.id})`} 
                                       strokeWidth={2}

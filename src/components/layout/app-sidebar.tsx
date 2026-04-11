@@ -34,6 +34,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -59,6 +60,7 @@ export function AppSidebar() {
   const router = useRouter()
   const auth = useAuth()
   const { user } = useUser()
+  const { setOpenMobile, isMobile } = useSidebar()
 
   const handleLogout = async () => {
     if (!auth) return
@@ -70,10 +72,17 @@ export function AppSidebar() {
     }
   }
 
+  // Closes the mobile sidebar after navigation
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-card">
       <SidebarHeader className="h-16 flex items-center px-4 border-b border-border">
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3" onClick={handleLinkClick}>
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
             <BarChart3 className="text-white w-5 h-5" />
           </div>
@@ -94,7 +103,7 @@ export function AppSidebar() {
                     isActive={pathname === item.url}
                     tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleLinkClick}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -115,7 +124,7 @@ export function AppSidebar() {
                     isActive={pathname === item.url}
                     tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleLinkClick}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -144,7 +153,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Settings" isActive={pathname === '/settings'}>
-              <Link href="/settings">
+              <Link href="/settings" onClick={handleLinkClick}>
                 <Settings />
                 <span>Settings</span>
               </Link>

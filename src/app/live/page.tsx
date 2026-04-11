@@ -17,7 +17,7 @@ import {
   Terminal, Loader2, Calculator,
   Clock, Globe,
   BarChart4, ArrowRightLeft, Coins, Landmark,
-  Wallet, Sparkles, TrendingUp
+  Wallet, Sparkles, TrendingUp, ShieldCheck
 } from "lucide-react"
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid
@@ -27,7 +27,7 @@ import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from '@
 import { collection, doc, serverTimestamp, query, where } from 'firebase/firestore'
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { INITIAL_MARKET_DATA } from '@/lib/market-data'
-import { testAlpacaConnection, placeAlpacaOrder, closeAlpacaPosition } from '@/app/actions/alpaca-actions'
+import { testAlpacaConnection, placeAlpacaOrder, closeAlpacaPosition, getAlpacaAccountDetails } from '@/app/actions/alpaca-actions'
 
 function RuntimeDisplay({ entryTime }: { entryTime: any }) {
   const [runtime, setRuntime] = useState("00:00:00")
@@ -66,6 +66,9 @@ export default function LiveTradingPage() {
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [isTransferOpen, setIsTransferOpen] = useState(false)
   const [transferAmount, setTransferAmount] = useState("5000")
+  const [alpacaAccount, setAlpacaAccount] = useState<any>(null)
+  const [isLoadingAlpaca, setIsLoadingAlpaca] = useState(false)
+
   const [logs, setLogs] = useState<string[]>([
     "[SYSTEM] Terminal Initialized.",
     "[API] Exchange Public Feeds connected.",
@@ -115,6 +118,25 @@ export default function LiveTradingPage() {
       logEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [logs])
+
+  // Fetch Alpaca details if keys exist
+  useEffect(() => {
+    const fetchAlpaca = async () => {
+      if (profile?.alpacaKey && profile?.alpacaSecret && profile?.alpacaKey !== '************************') {
+        setIsLoadingAlpaca(true)
+        const res = await getAlpacaAccountDetails({
+          keyId: profile.alpacaKey,
+          secretKey: profile.alpacaSecret,
+          paper: true
+        })
+        if (res.success) {
+          setAlpacaAccount(res)
+        }
+        setIsLoadingAlpaca(false)
+      }
+    }
+    fetchAlpaca()
+  }, [profile])
 
   useEffect(() => {
     if (!persistentPositions || persistentPositions.length === 0) {
@@ -170,7 +192,6 @@ export default function LiveTradingPage() {
           return next
         })
       } catch (e) {
-        // Silent fallback
         setLivePrices(prev => {
           const next = { ...prev }
           persistentPositions?.forEach(pos => {
@@ -268,7 +289,6 @@ export default function LiveTradingPage() {
     ])
 
     const startPrice = INITIAL_MARKET_DATA.find(i => i.symbol === config.symbol)?.price || 180;
-    // Calculate quantity - use fractional shares for crypto/modern accounts
     const calculatedQty = parseFloat((investAmt / startPrice).toFixed(6));
 
     let alpacaOrderId = null;
@@ -537,7 +557,34 @@ export default function LiveTradingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-6">
-          <Card className="bg-primary/10 border-primary/20 animate-in fade-in slide-in-from-left-4 duration-500">
+          {alpacaAccount && (
+            <Card className="bg-blue-500/10 border-blue-500/20 animate-in fade-in slide-in-from-left-4 duration-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[10px] font-bold uppercase text-blue-400 flex items-center justify-between">
+                  Alpaca Paper Account
+                  <Badge variant="outline" className="text-[8px] bg-green-500/10 text-green-500 border-none h-4 uppercase">Connected</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Buying Power</div>
+                  <div className="text-xl font-bold font-mono text-white">${parseFloat(alpacaAccount.buyingPower).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                  <div className="space-y-0.5">
+                    <div className="text-[8px] text-muted-foreground uppercase font-bold">Cash</div>
+                    <div className="text-[11px] font-mono font-bold">${parseFloat(alpacaAccount.cash).toLocaleString()}</div>
+                  </div>
+                  <div className="space-y-0.5 text-right">
+                    <div className="text-[8px] text-muted-foreground uppercase font-bold">Equity</div>
+                    <div className="text-[11px] font-mono font-bold">${parseFloat(alpacaAccount.equity).toLocaleString()}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="bg-primary/10 border-primary/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
                 Live Session Equity
@@ -553,7 +600,7 @@ export default function LiveTradingPage() {
                </div>
                <div className="flex items-center gap-2">
                   <div className={`text-[10px] font-bold flex items-center gap-1 ${sessionMetrics.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {sessionMetrics.totalProfit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                    <TrendingUp className={`w-3 h-3 ${sessionMetrics.totalProfit < 0 ? 'rotate-180' : ''}`} />
                     {sessionMetrics.totalProfit >= 0 ? '+' : ''}${sessionMetrics.totalProfit.toFixed(2)}
                   </div>
                   <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Floating PnL</span>
@@ -707,7 +754,7 @@ export default function LiveTradingPage() {
                               </div>
                               <div className={`text-xs font-mono font-bold flex items-center gap-1 ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
                                 ${currentEquity.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                                {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
+                                <TrendingUp className={`w-3 h-3 ${!isProfit ? 'rotate-180' : ''}`} />
                               </div>
                             </div>
                             <div className="hidden sm:block">

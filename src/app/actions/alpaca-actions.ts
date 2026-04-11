@@ -13,6 +13,31 @@ interface AlpacaConfig {
   paper?: boolean;
 }
 
+export async function getAlpacaAccountDetails(config: AlpacaConfig) {
+  try {
+    const alpaca = new Alpaca({
+      keyId: config.keyId,
+      secretKey: config.secretKey,
+      paper: config.paper ?? true,
+    });
+
+    const account = await alpaca.getAccount();
+    return { 
+      success: true, 
+      status: account.status, 
+      buyingPower: account.buying_power,
+      cash: account.cash,
+      portfolioValue: account.portfolio_value,
+      equity: account.equity,
+      currency: account.currency,
+      daytradingBuyingPower: account.daytrading_buying_power
+    };
+  } catch (error: any) {
+    console.error("Alpaca Account Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function testAlpacaConnection(config: AlpacaConfig) {
   try {
     const alpaca = new Alpaca({
@@ -44,14 +69,15 @@ export async function placeAlpacaOrder(params: {
     });
 
     // Normalize symbol for Alpaca
-    // Crypto: BTC/USDT -> BTC/USD (Alpaca uses USD base for most paper crypto)
+    // Crypto: BTC/USDT -> BTC/USD
     // Stocks: AAPL -> AAPL
     let symbol = params.symbol.toUpperCase();
     if (symbol.includes('/')) {
-      // Alpaca paper crypto usually uses /USD
       if (symbol.endsWith('/USDT')) {
         symbol = symbol.replace('/USDT', '/USD');
       }
+    } else {
+      symbol = symbol.replace('/', '');
     }
 
     const order = await alpaca.createOrder({

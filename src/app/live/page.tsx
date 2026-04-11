@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -28,6 +27,7 @@ import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from '@
 import { collection, doc, serverTimestamp, query, where } from 'firebase/firestore'
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { INITIAL_MARKET_DATA } from '../screener/page'
+import { testAlpacaConnection } from '@/app/actions/alpaca-actions'
 
 function RuntimeDisplay({ entryTime }: { entryTime: any }) {
   const [runtime, setRuntime] = useState("00:00:00")
@@ -116,7 +116,6 @@ export default function LiveTradingPage() {
     }
   }, [logs])
 
-  // Live Binance Integration for Bot Positions
   useEffect(() => {
     if (!persistentPositions || persistentPositions.length === 0) {
       setLivePrices({})
@@ -136,7 +135,6 @@ export default function LiveTradingPage() {
             
             let currentPrice = apiMatch ? parseFloat(apiMatch.price) : pos.entryPrice;
             
-            // Add a micro-simulation layer for "money moving" feel between API polls
             if (!apiMatch) {
               const baseData = INITIAL_MARKET_DATA.find(i => i.symbol === pos.instrumentId)
               const basePrice = baseData?.price || 64000
@@ -178,7 +176,6 @@ export default function LiveTradingPage() {
     return () => clearInterval(interval)
   }, [persistentPositions])
 
-  // Aggregate Session Metrics
   const sessionMetrics = useMemo(() => {
     if (!persistentPositions) return { totalEquity: 0, totalProfit: 0, invested: 0 }
     return persistentPositions.reduce((acc, pos) => {
@@ -236,6 +233,24 @@ export default function LiveTradingPage() {
     setLogs(prev => [...prev, 
       `[SYSTEM] Booting Compliance Engine...`, 
       `[AWS] Transmitting deployment intent to ${config.worker}...`,
+    ])
+
+    // Real Alpaca SDK connection check if selected
+    if (config.broker === 'alpaca') {
+      if (profile.alpacaKey && profile.alpacaSecret) {
+        setLogs(prev => [...prev, `[SDK] Authenticating with Alpaca API...`]);
+        const conn = await testAlpacaConnection({ keyId: profile.alpacaKey, secretKey: profile.alpacaSecret });
+        if (conn.success) {
+          setLogs(prev => [...prev, `[SUCCESS] Alpaca Paper Connection Verified. Status: ${conn.status}`]);
+        } else {
+          setLogs(prev => [...prev, `[ERROR] Alpaca Connection Failed: ${conn.error}. Proceeding with simulated worker.`]);
+        }
+      } else {
+        setLogs(prev => [...prev, `[WARN] Alpaca keys missing in Settings. Falling back to internal simulation.`]);
+      }
+    }
+    
+    setLogs(prev => [...prev, 
       `[AUTH] Authenticating with ${config.broker.toUpperCase()}...`, 
       `[SUCCESS] Worker assigned via ${config.broker.toUpperCase()}. Execution starting.`
     ])
@@ -449,7 +464,6 @@ export default function LiveTradingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-6">
-          {/* Real-time Session Equity Card */}
           <Card className="bg-primary/10 border-primary/20 animate-in fade-in slide-in-from-left-4 duration-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">

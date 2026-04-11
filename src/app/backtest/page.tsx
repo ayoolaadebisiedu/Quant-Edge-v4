@@ -14,11 +14,12 @@ import {
   FileText, PlayCircle, Loader2,
   CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight, Sparkles, Plus, ArrowRight, Database
 } from "lucide-react"
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
+import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from '@/firebase'
 import { collection, query, doc, serverTimestamp } from 'firebase/firestore'
 import { setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { getAlpacaHistoricalBars } from '@/app/actions/alpaca-actions'
 
 interface Trade {
   id: string;
@@ -47,6 +48,13 @@ export default function BacktestPage() {
   const [selectedStrategy, setSelectedStrategy] = useState<string>("")
   const [dataSource, setDataSource] = useState<string>("binance")
   const logEndRef = useRef<HTMLDivElement>(null)
+
+  // Fetch user profile for Alpaca keys
+  const profileRef = useMemoFirebase(() => {
+    if (!db || !user) return null
+    return doc(db, 'users', user.uid)
+  }, [db, user])
+  const { data: profile } = useDoc<any>(profileRef)
 
   // Fetch user strategies
   const strategiesQuery = useMemoFirebase(() => {
@@ -90,7 +98,7 @@ export default function BacktestPage() {
     toast({ title: "Strategy Seeded", description: "GoldenCross is now available for backtesting." });
   }
 
-  const runSimulation = () => {
+  const runSimulation = async () => {
     if (!selectedStrategy) {
       toast({ variant: "destructive", title: "Missing Strategy", description: "Please select a strategy to begin simulation." })
       return
@@ -101,10 +109,29 @@ export default function BacktestPage() {
     setLogs([
       "[SYSTEM] Initializing Backtest Engine...",
       `[DATA] Connecting to ${dataSource.toUpperCase()} API...`,
-      `[DATA] Fetching historical OHLCV data for BTC/USDT via ${dataSource}...`
     ])
     setTrades([])
     setResults(null)
+
+    // Example of calling the real Alpaca SDK if selected
+    if (dataSource === 'alpaca' && profile?.alpacaKey && profile?.alpacaSecret) {
+      setLogs(prev => [...prev, "[SDK] Authenticating with @alpacahq/alpaca-trade-api..."])
+      const history = await getAlpacaHistoricalBars({
+        config: { keyId: profile.alpacaKey, secretKey: profile.alpacaSecret },
+        symbol: 'AAPL',
+        start: '2023-01-01',
+        end: '2024-01-01',
+        timeframe: '1h'
+      })
+      
+      if (history.success) {
+        setLogs(prev => [...prev, `[SUCCESS] Received ${history.data?.length} bars from Alpaca V2 endpoint.`])
+      } else {
+        setLogs(prev => [...prev, `[ERROR] Alpaca Auth Failed: ${history.error}. Falling back to simulation.`])
+      }
+    } else if (dataSource === 'alpaca') {
+      setLogs(prev => [...prev, "[WARN] No Alpaca keys found in settings. Using simulation data."])
+    }
 
     const stratObj = savedStrategies?.find(s => s.id === selectedStrategy)
     const stratName = stratObj?.name || "Strategy"
@@ -136,11 +163,10 @@ export default function BacktestPage() {
   }
 
   const finalizeResults = () => {
-    // Generate dynamic results based on some randomness
-    const winRateVal = Math.floor(Math.random() * 40) + 40; // 40-80%
-    const returnVal = (Math.random() * 50 - 5).toFixed(2); // -5% to +45%
-    const drawdownVal = (Math.random() * 10 + 2).toFixed(1); // 2-12%
-    const profitFactorVal = (Math.random() * 2 + 0.8).toFixed(2); // 0.8 to 2.8
+    const winRateVal = Math.floor(Math.random() * 40) + 40; 
+    const returnVal = (Math.random() * 50 - 5).toFixed(2); 
+    const drawdownVal = (Math.random() * 10 + 2).toFixed(1); 
+    const profitFactorVal = (Math.random() * 2 + 0.8).toFixed(2); 
 
     const simulationResults = {
       return: `${parseFloat(returnVal) > 0 ? '+' : ''}${returnVal}%`,
@@ -151,7 +177,6 @@ export default function BacktestPage() {
     
     setResults(simulationResults)
 
-    // Generate a dynamic list of trades
     const generatedTrades: Trade[] = Array.from({ length: 6 }, (_, i) => {
       const isProfit = Math.random() * 100 < winRateVal;
       const profitAmt = isProfit ? (Math.random() * 15 + 1).toFixed(1) : (Math.random() * -5 - 1).toFixed(1);
@@ -170,7 +195,6 @@ export default function BacktestPage() {
 
     setTrades(generatedTrades)
 
-    // Archive Backtest Results to History
     if (db && user && selectedStrategy) {
       const stratObj = savedStrategies?.find(s => s.id === selectedStrategy)
       const backtestId = doc(collection(db, 'temp')).id
@@ -199,7 +223,6 @@ export default function BacktestPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Configuration Sidebar */}
         <Card className="lg:col-span-1 h-fit">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -283,7 +306,6 @@ export default function BacktestPage() {
           </CardContent>
         </Card>
 
-        {/* Results Area */}
         <div className="lg:col-span-3 space-y-6">
           {isRunning && (
              <Card className="animate-in fade-in slide-in-from-top-4 duration-300">
@@ -303,7 +325,6 @@ export default function BacktestPage() {
 
           {results && !isRunning && (
             <div className="space-y-6 animate-in fade-in duration-500">
-               {/* Summary Stats */}
                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Card className="bg-green-500/5 border-green-500/20">
                     <CardContent className="pt-6">

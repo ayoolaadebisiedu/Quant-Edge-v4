@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TradingService, TradeConfig } from '@/services/trading-service';
-import { BotManager, LiveBotMonitor, EquityCurvePoint } from '@/services/live-bot-monitor';
-
-/**
- * Global bot manager instance
- */
-const botManager = new BotManager();
+import { botManager, EquityCurvePoint } from '@/services/live-bot-monitor';
 
 /**
  * GET /api/live/bots - List all running bots
@@ -15,11 +10,8 @@ export async function GET(request: NextRequest) {
     const bots = Array.from(botManager.getAllBots().entries());
     
     const botStatuses = await Promise.all(
-      bots.map(async ([botId, bot]) => {
-        return {
-          botId,
-          ...await bot.getStatus(),
-        };
+      bots.map(async ([, bot]) => {
+        return await bot.getStatus();
       })
     );
 

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { BotManager } from '@/services/live-bot-monitor'
-
-// Initialize bot manager singleton
-const botManager = new BotManager()
+import { botManager } from '@/services/live-bot-monitor'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { botId: string } }
+  context: any
 ) {
-  const { botId } = params
+  const { botId } = await context.params
 
   try {
     const bot = botManager.getBot(botId)
@@ -20,29 +17,11 @@ export async function GET(
       )
     }
 
-    const status = bot.getStatus()
+    const status = await bot.getStatus()
 
     return NextResponse.json({
       success: true,
-      bot: {
-        botId,
-        strategy: status.strategy,
-        exchange: status.exchange,
-        mode: status.mode,
-        status: status.status,
-        startTime: status.startTime,
-        account: status.account,
-        positions: status.positions,
-        metrics: status.metrics,
-        equityCurve: status.equityCurveHistory,
-        recentTrades: status.recentTrades,
-        healthCheck: {
-          dataFeed: status.dataFeed,
-          apiLatency: status.apiLatency,
-          lastUpdate: status.lastUpdate,
-          uptime: formatUptime(Date.now() - status.startTime)
-        }
-      }
+      bot: status,
     })
   } catch (error) {
     console.error('Failed to fetch bot status:', error)
@@ -55,9 +34,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { botId: string } }
+  context: any
 ) {
-  const { botId } = params
+  const { botId } = await context.params
   const { action } = await request.json()
 
   try {

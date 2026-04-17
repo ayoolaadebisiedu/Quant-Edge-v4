@@ -81,8 +81,14 @@ export class LiveBotMonitor {
   };
   private lastEquity: number = 0;
   private peakEquity: number = 0;
-  private healthCheckInterval: NodeJS.Timer | null = null;
-  private updateInterval: NodeJS.Timer | null = null;
+  private healthCheckState = {
+    dataFeed: 'OK' as 'OK' | 'ERROR',
+    apiLatency: 0,
+    lastUpdate: Date.now(),
+    uptime: '0s',
+  };
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private updateInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     botId: string,
@@ -243,11 +249,17 @@ export class LiveBotMonitor {
     const now = Date.now();
     const latency = Math.floor(Math.random() * 50) + 5; // 5-55ms simulated
     
-    // Check if we have recent data
     const lastUpdate = this.equityCurveHistory.length > 0 ?
       this.equityCurveHistory[this.equityCurveHistory.length - 1].timestamp : now;
     
-    const timeSinceLastUpdate = now - lastUpdate;
+    const dataFeedStatus = now - lastUpdate < 15000 ? 'OK' : 'ERROR';
+
+    this.healthCheckState = {
+      dataFeed: dataFeedStatus,
+      apiLatency: latency,
+      lastUpdate: now,
+      uptime: this.formatUptime(),
+    };
   }
 
   /**
@@ -269,12 +281,7 @@ export class LiveBotMonitor {
       metrics: this.metricsCache,
       equityCurve: this.equityCurveHistory.slice(-100), // Last 100 points
       recentTrades: this.tradeHistory.slice(-5),
-      healthCheck: {
-        dataFeed: 'OK',
-        apiLatency: Math.floor(Math.random() * 50) + 5,
-        lastUpdate: Date.now(),
-        uptime: this.formatUptime(),
-      },
+      healthCheck: this.healthCheckState,
     };
   }
 
@@ -378,5 +385,7 @@ export class BotManager {
     }
   }
 }
+
+export const botManager = new BotManager();
 
 export default LiveBotMonitor;

@@ -1,6 +1,8 @@
 import { doc, setDoc, updateDoc, getDoc, collection, query, where, getDocs, deleteDoc, writeBatch } from 'firebase/firestore'
-import { db } from '@/firebase/config'
+import { initializeFirebase } from '@/firebase'
 import { getAuth } from 'firebase/auth'
+
+const { firestore: db } = initializeFirebase()
 
 export interface BacktestResult {
   startDate: string
@@ -160,7 +162,7 @@ export class BotDeploymentService {
     const botDocRef = doc(db, `users/${this.userId}/bots`, botId)
     await setDoc(botDocRef, {
       ...botConfig,
-      backtestDate: backtestResult,
+      backtestDate: botConfig.backtestDate,
       createdAt: now,
       updatedAt: now,
     })

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TradingService } from '@/services/trading-service';
-import { BotManager, EquityCurvePoint } from '@/services/live-bot-monitor';
-
-const botManager = new BotManager();
+import { botManager, EquityCurvePoint } from '@/services/live-bot-monitor';
 
 /**
  * POST /api/live/deploy-from-backtest
